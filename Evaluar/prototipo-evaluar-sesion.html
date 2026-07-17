@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Alexia — Evaluar (sesión)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;700;800;900&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/alexia-ds.css">
+<style>
+  /* ── EVALUAR (sesión) — extensiones puntuales, solo usando variables del kit ── */
+  .eval-layout { flex: 1; display: flex; overflow: hidden; }
+  .eval-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+
+  .eval-back-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 24px; border-bottom: 1px solid var(--grey-400);
+    flex-shrink: 0; background: var(--bg-primary);
+  }
+  .eval-back-link {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 13px; font-weight: 700; color: var(--action-primary);
+    font-family: var(--font-ui); cursor: pointer; background: none; border: none;
+  }
+  .eval-back-link svg { width: 14px; height: 14px; stroke: currentColor; stroke-width: 2; fill: none; }
+  .eval-crumb { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); font-family: var(--font-body); }
+  .eval-crumb .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--support-discovery); }
+  .eval-crumb strong { color: var(--text-primary); font-weight: 700; font-family: var(--font-ui); }
+  .eval-crumb .sep { color: var(--text-muted); }
+
+  .eval-title-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 24px 12px; flex-shrink: 0; background: var(--bg-primary); gap: 16px;
+  }
+  .eval-title { font-size: 20px; font-weight: 800; color: var(--text-primary); font-family: var(--font-ui); }
+  .eval-subtitle { font-size: 13px; color: var(--text-secondary); font-family: var(--font-body); margin-top: 2px; }
+
+  .autosave-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px; border-radius: 99px;
+    background: var(--green-50); color: var(--support-positive);
+    border: 1px solid #c3e6cb;
+    font-size: 12px; font-weight: 700; font-family: var(--font-ui);
+    white-space: nowrap; transition: background 0.2s, color 0.2s, border-color 0.2s;
+  }
+  .autosave-pill svg { width: 14px; height: 14px; stroke: currentColor; stroke-width: 2.5; fill: none; flex-shrink: 0; }
+  .autosave-pill.saving { background: var(--yellow-50); color: var(--yellow-700); border-color: #ffeeba; }
+  .autosave-pill.saving svg { animation: autosave-spin 0.8s linear infinite; }
+  @keyframes autosave-spin { to { transform: rotate(360deg); } }
+
+  .eval-stats-row {
+    display: flex; align-items: center; gap: 32px; flex-wrap: wrap;
+    padding: 4px 24px 16px; flex-shrink: 0; background: var(--bg-primary);
+  }
+  .eval-stat { display: flex; flex-direction: column; }
+  .eval-stat-num { font-size: 22px; font-weight: 800; font-family: var(--font-ui); line-height: 1.1; }
+  .eval-stat-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); font-family: var(--font-ui); }
+  .eval-stat-num.ok { color: var(--support-positive); }
+  .eval-stat-num.pending { color: var(--text-secondary); }
+  .eval-stat-num.warn { color: var(--support-danger); }
+  .eval-stat-num.avg { color: var(--action-primary); }
+
+  .eval-table-wrap { flex: 1; overflow: auto; }
+  .eval-table { width: 100%; border-collapse: collapse; }
+  .eval-table thead th {
+    position: sticky; top: 0; z-index: 1;
+    background: var(--bg-surface); border-bottom: 2px solid var(--border);
+    padding: 0 10px; height: 34px;
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--text-muted); font-family: var(--font-ui); text-align: left; white-space: nowrap;
+  }
+  .eval-table thead th.center { text-align: center; }
+  .eval-table tbody tr { border-bottom: 1px solid var(--grey-400); }
+  .eval-table tbody tr:hover { background: var(--bg-surface); }
+  .eval-table td { padding: 4px 10px; height: 40px; vertical-align: middle; font-family: var(--font-body); color: var(--text-primary); }
+  .eval-table td.center { text-align: center; }
+  .eval-row-name { display: flex; align-items: center; gap: 8px; }
+  .eval-avatar { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; font-family: var(--font-ui); color: var(--action-primary); background: var(--blue-100); flex-shrink: 0; }
+  .eval-name { font-size: 13px; font-weight: 700; color: var(--text-primary); font-family: var(--font-ui); white-space: nowrap; }
+  .eval-promedio-cell { font-size: 14px; font-weight: 800; font-family: var(--font-ui); }
+  .eval-promedio-cell.reprobado { color: var(--support-danger); }
+  .eval-promedio-cell.aprobado { color: var(--support-positive); }
+
+  .eval-nota-input {
+    width: 56px; height: 28px; text-align: center;
+    border: 1px solid var(--grey-500); border-radius: var(--radius-sm);
+    font-size: 13px; font-weight: 700; font-family: var(--font-ui);
+    color: var(--text-primary); background: var(--bg-surface); outline: none;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .eval-nota-input:focus { border-color: var(--action-primary); background: var(--bg-primary); }
+  .eval-nota-input.reprobado { color: var(--support-danger); border-color: var(--support-danger); background: var(--red-50); }
+  .eval-nota-input.aprobado { color: var(--support-positive); }
+
+  .eval-obs-input {
+    width: 100%; height: 28px; border: 1px solid var(--grey-400); border-radius: var(--radius-sm);
+    padding: 0 10px; font-size: 12px; font-family: var(--font-body); color: var(--text-primary);
+    background: var(--bg-surface); outline: none;
+  }
+  .eval-obs-input:focus { border-color: var(--action-primary); }
+
+  .pie-tag { display: inline-flex; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; font-family: var(--font-ui); background: var(--yellow-50); color: var(--yellow-700); }
+
+  /* ── PANEL DE SESIÓN (estático, no overlay) ── */
+  .session-panel { width: 380px; flex-shrink: 0; background: var(--bg-primary); border-left: 1px solid var(--border); display: flex; flex-direction: column; overflow-y: auto; }
+  .sp-top { padding: 16px 20px 12px; border-bottom: 1px solid var(--grey-400); }
+  .sp-top-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .sp-code { display: flex; align-items: center; gap: 8px; }
+  .sp-code-badge { font-size: 11px; font-weight: 700; font-family: var(--font-ui); color: var(--action-primary); background: var(--blue-100); padding: 2px 8px; border-radius: 4px; }
+  .sp-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); font-family: var(--font-ui); }
+  .sp-nav { display: flex; align-items: center; gap: 4px; }
+  .sp-nav button { width: 24px; height: 24px; border: none; background: none; border-radius: var(--radius-sm); cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); }
+  .sp-nav button:hover { background: var(--grey-300); }
+  .sp-nav button svg { width: 14px; height: 14px; stroke: currentColor; stroke-width: 2; fill: none; }
+  .sp-close { width: 24px; height: 24px; border: none; background: none; border-radius: var(--radius-sm); cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); }
+  .sp-close svg { width: 16px; height: 16px; stroke: currentColor; stroke-width: 2; fill: none; }
+  .sp-course { font-size: 15px; font-weight: 700; color: var(--text-primary); font-family: var(--font-ui); margin-bottom: 8px; }
+  .sp-subject { font-size: 15px; font-weight: 800; color: var(--text-primary); font-family: var(--font-ui); line-height: 1.3; margin-bottom: 6px; }
+  .sp-meta { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--text-secondary); font-family: var(--font-body); }
+  .sp-meta span { display: flex; align-items: center; gap: 4px; }
+  .sp-meta svg { width: 12px; height: 12px; stroke: currentColor; stroke-width: 2; fill: none; }
+
+  .sp-section { padding: 16px 20px; border-bottom: 1px solid var(--grey-400); }
+  .sp-section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); font-family: var(--font-ui); margin-bottom: 10px; }
+
+  .task-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: var(--radius-md); cursor: pointer; margin-bottom: 6px; transition: background 0.15s; }
+  .task-item:last-child { margin-bottom: 0; }
+  .task-item:hover { background: var(--bg-surface); }
+  .task-icon { width: 34px; height: 34px; border-radius: var(--radius-sm); background: var(--grey-300); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .task-icon svg { width: 17px; height: 17px; stroke: var(--text-secondary); stroke-width: 2; fill: none; }
+  .task-info { flex: 1; min-width: 0; }
+  .task-name { font-size: 13px; font-weight: 700; color: var(--text-primary); font-family: var(--font-ui); }
+  .task-desc { font-size: 11px; color: var(--text-muted); font-family: var(--font-body); }
+  .task-item.active { background: var(--green-50); }
+  .task-item.active:hover { background: var(--green-50); }
+  .task-item.active .task-icon { background: var(--support-positive); }
+  .task-item.active .task-icon svg { stroke: #fff; }
+  .task-item.active .task-name { color: var(--support-positive); }
+  .task-item.active .task-desc { color: var(--support-positive); opacity: 0.8; }
+  .task-item svg.chev { width: 14px; height: 14px; stroke: var(--text-muted); stroke-width: 2; fill: none; flex-shrink: 0; }
+
+  .resumen-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 14px; }
+  .resumen-col-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); font-family: var(--font-ui); margin-bottom: 8px; }
+  .resumen-divider { height: 1px; background: var(--grey-400); margin-bottom: 14px; }
+
+  .vinculos-grid { display: flex; flex-direction: column; gap: 8px; }
+  .vinculo-btn {
+    display: flex; align-items: center; gap: 8px; justify-content: center;
+    height: 36px; border: 1px solid var(--grey-500); border-radius: var(--radius-sm);
+    background: var(--bg-primary); font-size: 13px; font-weight: 700; font-family: var(--font-ui);
+    color: var(--text-primary); cursor: pointer; transition: background 0.15s;
+  }
+  .vinculo-btn:hover { background: var(--grey-300); }
+  .vinculo-btn.current { border-color: var(--support-positive); color: var(--support-positive); background: var(--green-50); }
+  .vinculo-btn svg { width: 14px; height: 14px; stroke: currentColor; stroke-width: 2; fill: none; }
+
+  .sp-footer { padding: 16px 20px; margin-top: auto; }
+  .sp-footer-card { display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid var(--grey-400); border-radius: var(--radius-md); background: var(--bg-surface); }
+  .sp-footer-icon { width: 32px; height: 32px; border-radius: 50%; background: var(--yellow-50); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .sp-footer-icon svg { width: 16px; height: 16px; stroke: var(--yellow-700); stroke-width: 2; fill: none; }
+  .sp-footer-text { flex: 1; min-width: 0; }
+  .sp-footer-title { font-size: 13px; font-weight: 700; color: var(--text-primary); font-family: var(--font-ui); }
+  .sp-footer-sub { font-size: 11px; color: var(--text-secondary); font-family: var(--font-body); margin-top: 1px; }
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<header class="topbar">
+  <div class="topbar-hamburger"><span></span><span></span><span></span></div>
+  <div class="topbar-logo" style="cursor:pointer;">
+    <svg width="120" height="24" style="display:block;" viewBox="0 0 160 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M21.1846 31.0405H24.4126L17.1907 4.06858C16.5831 1.80555 14.545 0.235421 12.2095 0.235421C9.8739 0.235421 7.83582 1.80555 7.2282 4.06858L0 31.0405H3.22801L5.68382 21.8804H18.7288L21.1846 31.0405ZM6.46867 18.9372L10.2663 4.76783C10.798 2.77815 13.6083 2.77815 14.1399 4.76783L17.9376 18.9372H6.46867Z" fill="#2A80B5"/>
+      <path d="M82.7002 1.18894H85.8839V4.90132H82.7002V1.18894ZM82.7002 9.71979H85.8839V31.0405H82.7002V9.71979Z" fill="#2A80B5"/>
+      <path d="M63.3005 9.71979L68.478 18.079L73.6555 9.71979H77.1367L70.3832 20.2975L77.0923 31.0405H73.6112L68.4717 22.7258L63.2942 31.0405H59.813L66.4779 20.3802L59.813 9.71979H63.2942H63.3005Z" fill="#2A80B5"/>
+      <path d="M54.6735 27.2392L55.5343 29.3878C55.5343 29.3878 53.3633 31.3139 47.8251 31.3139C40.7298 31.3139 38.4259 27.6015 38.4259 20.3547C38.4259 12.2498 41.9071 9.14132 47.2998 9.14132C52.6924 9.14132 55.8318 12.129 55.8318 19.1215C55.8318 20.9841 55.047 21.5498 53.2368 21.5498H41.6539C41.6539 26.114 43.135 28.9174 47.8251 28.8919C51.6987 28.8729 54.6799 27.2392 54.6799 27.2392H54.6735ZM51.743 18.988C52.8 18.988 53.1861 18.7083 53.0405 17.6149C52.4962 13.4004 50.9139 11.8239 47.5276 11.8239C43.9198 11.8239 41.6539 13.8263 41.6096 18.988H51.743Z" fill="#2A80B5"/>
+      <path d="M108.138 26.9213C108.138 26.9213 107.999 17.7484 107.999 16.5979C107.999 9.66893 108.448 9.14767 100.726 9.14767C91.3715 9.14767 90.593 17.7548 90.593 21.6897C90.593 27.1311 93.4855 31.3202 97.7832 31.3202C103.227 31.3202 105.423 29.6166 105.423 29.6166C106.695 30.8943 108.227 31.3202 110.474 31.3202L110.6 28.8029C109.239 28.6313 108.22 28.1609 108.138 26.9277V26.9213ZM98.4541 28.8919C96.5363 28.8919 93.878 27.2964 93.878 21.677C93.878 16.0575 95.2388 11.951 100.853 11.951C105.505 11.951 104.935 12.1036 104.942 16.6106C104.942 18.7337 104.942 27.2964 104.942 27.2964C104.942 27.2964 102.277 28.8856 98.4478 28.8856L98.4541 28.8919Z" fill="#2A80B5"/>
+      <path d="M34.7738 31.4664C31.6091 31.4664 29.2546 30.4557 29.2546 26.559C29.2546 25.3321 29.2546 0.229065 29.2546 0.229065H32.4383C32.4383 0.229065 32.4383 20.1513 32.4383 26.2666C32.4383 28.2118 33.0839 28.9491 34.9004 28.9491L34.7738 31.4664Z" fill="#2A80B5"/>
+      <path d="M133.766 17.8817C133.766 17.8817 133.779 17.6592 133.804 17.5766L133.766 17.8817Z" fill="#F8DC55"/>
+      <path d="M12.2095 0.235421C12.2095 0.235421 12.2095 0.235421 12.2095 0.235421" fill="#F5D83E"/>
+      <path d="M136.747 21.1237C136.665 21.2636 136.791 21.6831 136.696 21.3716C136.703 21.1173 136.722 20.9203 136.747 21.1237Z" fill="white"/>
+      <path d="M152.425 27.9191C152.526 27.3724 153.691 25.5798 153.95 25.618C153.577 25.5607 154.552 22.9799 155.045 22.8782C155.9 24.1 154.652 26.6 152.425 27.9191Z" fill="#3F96B4"/>
+    </svg>
+  </div>
+  <div class="topbar-right">
+    <div class="icon-btn"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+    <div class="icon-btn"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><div class="badge">3</div></div>
+    <div class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.57"/></svg></div>
+    <div class="vdivider"></div>
+    <div class="school-info"><strong>Colegio La Fontaine</strong><br>Educaria Chile<br>2026</div>
+    <div class="avatar">RS</div>
+    <div style="width:36px;height:36px;border-radius:50%;background:var(--grey-300);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;margin-right:6px;margin-left:var(--sp-16);" title="Salir">
+      <svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:var(--grey-700);stroke-width:2;fill:none;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+    </div>
+  </div>
+</header>
+
+<div class="body-row">
+
+  <!-- SIDENAV -->
+  <nav class="sidenav">
+    <div class="nav-item" data-tooltip="Visión general"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+    <div class="nav-item active" data-tooltip="Cuaderno del Profesor"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div>
+    <div class="nav-item" data-tooltip="Filiación"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+    <div class="nav-item" data-tooltip="Datos Académicos"><svg viewBox="0 0 24 24"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg></div>
+    <div class="nav-item" data-tooltip="Comunicación"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+    <div class="nav-spacer"></div>
+    <div class="nav-item" data-tooltip="Utilidades"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div>
+  </nav>
+
+  <!-- CONTENT -->
+  <main class="content">
+    <div class="page-view active">
+
+      <div class="eval-layout">
+
+        <!-- MAIN -->
+        <div class="eval-main">
+
+          <div class="eval-back-row">
+            <button class="eval-back-link" onclick="return false">
+              <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+              Volver al horario
+            </button>
+            <div class="eval-crumb">
+              <div class="dot"></div>
+              HISTORIA, GEOGRAFÍA Y CIENCIAS SOCIALES · 1 Básico
+              <span class="sep">/</span>
+              <strong>Evaluar</strong>
+            </div>
+          </div>
+
+          <div class="eval-title-row">
+            <div>
+              <div class="eval-title">Evaluar: 17/07/2026 · 08:00-08:45</div>
+              <div class="eval-subtitle">Control de historia · 25 alumnos</div>
+            </div>
+            <div class="autosave-pill" id="autosave-pill">
+              <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+              <span id="autosave-text">Guardado automáticamente</span>
+            </div>
+          </div>
+
+          <div class="eval-stats-row">
+            <div class="eval-stat"><span class="eval-stat-num ok" id="stat-evaluados">0</span><span class="eval-stat-label">Evaluados</span></div>
+            <div class="eval-stat"><span class="eval-stat-num pending" id="stat-pendientes">25</span><span class="eval-stat-label">Pendientes</span></div>
+            <div class="eval-stat"><span class="eval-stat-num warn" id="stat-reprobados">0</span><span class="eval-stat-label">Bajo 4.0</span></div>
+            <div class="eval-stat"><span class="eval-stat-num avg" id="stat-promedio">—</span><span class="eval-stat-label">Promedio curso</span></div>
+          </div>
+
+          <div class="eval-table-wrap">
+            <table class="eval-table" id="eval-table">
+              <thead>
+                <tr>
+                  <th style="width:36px;">Nro.</th>
+                  <th style="min-width:180px;">Alumno</th>
+                  <th class="center" style="width:70px;" title="Parcial 1">P1</th>
+                  <th class="center" style="width:70px;" title="Parcial 2">P2</th>
+                  <th class="center" style="width:70px;" title="Parcial 3">P3</th>
+                  <th class="center" style="width:70px;" title="Parcial 4">P4</th>
+                  <th class="center" style="width:70px;" title="Parcial 5">P5</th>
+                  <th class="center" style="width:80px;">Promedio</th>
+                  <th style="min-width:160px;">Observación</th>
+                </tr>
+              </thead>
+              <tbody id="eval-tbody"></tbody>
+            </table>
+          </div>
+
+        </div><!-- /eval-main -->
+
+        <!-- PANEL DE SESIÓN -->
+        <aside class="session-panel">
+          <div class="sp-top">
+            <div class="sp-top-row">
+              <div class="sp-code">
+                <span class="sp-code-badge">HISYCS</span>
+                <span class="sp-label">Sesión seleccionada</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:4px;">
+                <div class="sp-nav">
+                  <button title="Sesión anterior"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+                  <button title="Sesión siguiente"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></button>
+                </div>
+                <button class="sp-close" title="Cerrar"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+              </div>
+            </div>
+            <div class="sp-course">1 Básico</div>
+            <div class="sp-subject">HISTORIA, GEOGRAFÍA Y CIENCIAS SOCIALES</div>
+            <div class="sp-meta">
+              <span><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>08:00-08:45</span>
+              <span><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Viernes 17/7</span>
+              <span>45 min</span>
+            </div>
+          </div>
+
+          <div class="sp-section">
+            <div class="sp-section-title">Tareas de la sesión</div>
+
+            <div class="task-item">
+              <div class="task-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+              <div class="task-info"><div class="task-name">Leccionario</div><div class="task-desc">actividades y tareas</div></div>
+              <svg class="chev" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+            </div>
+
+            <div class="task-item">
+              <div class="task-icon"><svg viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+              <div class="task-info"><div class="task-name">Pasar lista</div><div class="task-desc">registro de asistencia</div></div>
+              <svg class="chev" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+            </div>
+
+            <div class="task-item">
+              <div class="task-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div>
+              <div class="task-info"><div class="task-name">Conducta</div><div class="task-desc">Incidencias</div></div>
+              <svg class="chev" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+            </div>
+
+            <div class="task-item active">
+              <div class="task-icon"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+              <div class="task-info"><div class="task-name">Evaluar</div><div class="task-desc">notas y calificaciones</div></div>
+              <svg class="chev" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+            </div>
+          </div>
+
+          <div class="sp-section">
+            <div class="sp-section-title">Resumen rápido</div>
+            <div class="resumen-grid">
+              <div>
+                <div class="resumen-col-title">Pasar lista</div>
+                <div class="stat-row"><div class="stat-left"><div class="dot" style="background:var(--support-positive)"></div>Presentes</div><span class="stat-right">25</span></div>
+                <div class="stat-row"><div class="stat-left"><div class="dot" style="background:var(--support-danger)"></div>Ausentes</div><span class="stat-right">0</span></div>
+                <div class="stat-row"><div class="stat-left"><div class="dot" style="background:var(--action-primary)"></div>Asistencia</div><span class="stat-right">100%</span></div>
+              </div>
+              <div>
+                <div class="resumen-col-title">Evaluar</div>
+                <div class="stat-row"><div class="stat-left"><div class="dot" style="background:var(--support-positive)"></div>Evaluados</div><span class="stat-right" id="resumen-evaluados">0</span></div>
+                <div class="stat-row"><div class="stat-left"><div class="dot" style="background:var(--grey-600)"></div>Pendientes</div><span class="stat-right" id="resumen-pendientes">25</span></div>
+                <div class="stat-row"><div class="stat-left"><div class="dot" style="background:var(--action-primary)"></div>Promedio</div><span class="stat-right" id="resumen-promedio">—</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="sp-section" style="border-bottom:none;">
+            <div class="sp-section-title">Vínculos</div>
+            <div class="vinculos-grid">
+              <button class="vinculo-btn current"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Evaluar</button>
+              <button class="vinculo-btn"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>Planificación</button>
+              <button class="vinculo-btn"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>PIE</button>
+            </div>
+          </div>
+
+          <div class="sp-footer">
+            <div class="sp-footer-card">
+              <div class="sp-footer-icon"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></div>
+              <div class="sp-footer-text">
+                <div class="sp-footer-title">Firmar sesión completa</div>
+                <div class="sp-footer-sub">Cierre la asistencia y firme el leccionario</div>
+              </div>
+              <span class="wc-status" status="warning">Pendiente</span>
+            </div>
+          </div>
+        </aside>
+
+      </div><!-- /eval-layout -->
+    </div><!-- /page-view -->
+  </main>
+</div>
+
+<script>
+  var ALUMNOS = [
+    {n:'Acosta Bronfman, Lucas Benjamín', g:'003A'},
+    {n:'Aguilera Aguilera, Olivia Valentina', g:'003A'},
+    {n:'Aguirre Gómez, Martín Lautaro', g:'003A'},
+    {n:'Arévalo Bravo, Pedro Alejandro', g:'003A', pie:true},
+    {n:'Arias Cortese, Clemente', g:'003A'},
+    {n:'Contreras Gutierrez, Renato Antonio', g:'003B'},
+    {n:'Córdoba Ovalle, Matías', g:'003B'},
+    {n:'Correa Castillo, Matilda', g:'003B'},
+    {n:'Cuche Stern, Gael', g:'003B'},
+    {n:'Cuello Handal, Agata', g:'003B'},
+    {n:'De la Fuente Marín, Josefa', g:'003B'},
+    {n:'Del Río Aránguiz, Tomás', g:'003C'},
+    {n:'Elgueta Poblete, Constanza', g:'003C'},
+    {n:'Fuentealba Zúñiga, Máximo', g:'003C'},
+    {n:'Gallardo Ibáñez, Emilia', g:'003C'},
+    {n:'Hidalgo Concha, Vicente', g:'003C'},
+    {n:'Ibarra Salinas, Amanda', g:'003A'},
+    {n:'Jara Contreras, Benjamín', g:'003A'},
+    {n:'Lira Espinoza, Trinidad', g:'003B'},
+    {n:'Maldonado Rojas, Ignacio', g:'003B'},
+    {n:'Navarrete Toro, Antonia', g:'003C'},
+    {n:'Ortiz Pizarro, Diego', g:'003C'},
+    {n:'Pardo Cáceres, Florencia', g:'003A'},
+    {n:'Rivas Sepúlveda, Joaquín', g:'003B'},
+    {n:'Zúñiga Herrera, Isidora', g:'003C'}
+  ];
+
+  var COLORS = ['#E1EDF8','#EDF7EE','#F1EFFA','#FFFCE0','#FEF0F0','#EAF6FA'];
+
+  function initials(name) {
+    var p = name.split(',');
+    var ap = (p[0]||'').trim().split(' ')[0] || '';
+    var nom = (p[1]||'').trim().split(' ')[0] || '';
+    return ((ap[0]||'') + (nom[0]||'')).toUpperCase();
+  }
+
+  var PARCIALES = 5;
+
+  function notaAleatoria() {
+    var v = Math.round((1 + Math.random() * 6) * 10) / 10;
+    return v.toFixed(1);
+  }
+
+  var tbody = document.getElementById('eval-tbody');
+  ALUMNOS.forEach(function(al, i) {
+    var tr = document.createElement('tr');
+    var parcialesHtml = '';
+    for (var c = 0; c < PARCIALES; c++) {
+      parcialesHtml +=
+        '<td class="center">' +
+          '<input class="eval-nota-input" type="number" min="1.0" max="7.0" step="0.1" ' +
+          'value="' + notaAleatoria() + '" data-row="' + i + '" data-col="' + c + '">' +
+        '</td>';
+    }
+    tr.innerHTML =
+      '<td class="center" style="color:var(--text-muted);">' + (i+1) + '</td>' +
+      '<td><div class="eval-row-name">' +
+        '<div class="eval-avatar" style="background:' + COLORS[i % COLORS.length] + ';">' + initials(al.n) + '</div>' +
+        '<div><div class="eval-name">' + al.n + (al.pie ? ' <span class="pie-tag">PIE</span>' : '') + '</div></div>' +
+      '</div></td>' +
+      parcialesHtml +
+      '<td class="center"><span class="eval-promedio-cell" id="prom-' + i + '">—</span></td>' +
+      '<td><input class="eval-obs-input" type="text" placeholder="Sin observaciones"></td>';
+    tbody.appendChild(tr);
+  });
+
+  var pill = document.getElementById('autosave-pill');
+  var pillText = document.getElementById('autosave-text');
+  var saveTimer;
+
+  function recalcularFila(i) {
+    var inputs = document.querySelectorAll('.eval-nota-input[data-row="' + i + '"]');
+    var notas = [];
+    inputs.forEach(function(inp) {
+      var v = parseFloat(inp.value.replace(',', '.'));
+      inp.classList.remove('reprobado', 'aprobado');
+      if (!isNaN(v) && inp.value !== '') {
+        notas.push(v);
+        inp.classList.add(v < 4.0 ? 'reprobado' : 'aprobado');
+      }
+    });
+    var prom = notas.length ? notas.reduce(function(a,b){return a+b;},0) / notas.length : null;
+    var cell = document.getElementById('prom-' + i);
+    cell.classList.remove('reprobado', 'aprobado');
+    if (prom === null) {
+      cell.textContent = '—';
+    } else {
+      cell.textContent = prom.toFixed(1);
+      cell.classList.add(prom < 4.0 ? 'reprobado' : 'aprobado');
+    }
+    return prom;
+  }
+
+  function recalcular() {
+    var promedios = [];
+    var reprobados = 0;
+    ALUMNOS.forEach(function(al, i) {
+      var prom = recalcularFila(i);
+      if (prom !== null) {
+        promedios.push(prom);
+        if (prom < 4.0) reprobados++;
+      }
+    });
+
+    var total = ALUMNOS.length;
+    var evaluados = promedios.length;
+    var pendientes = total - evaluados;
+    var promedioCurso = evaluados ? (promedios.reduce(function(a,b){return a+b;},0) / evaluados).toFixed(1) : '—';
+
+    document.getElementById('stat-evaluados').textContent = evaluados;
+    document.getElementById('stat-pendientes').textContent = pendientes;
+    document.getElementById('stat-reprobados').textContent = reprobados;
+    document.getElementById('stat-promedio').textContent = promedioCurso;
+    document.getElementById('resumen-evaluados').textContent = evaluados;
+    document.getElementById('resumen-pendientes').textContent = pendientes;
+    document.getElementById('resumen-promedio').textContent = promedioCurso;
+  }
+
+  function autoguardar() {
+    clearTimeout(saveTimer);
+    pill.classList.add('saving');
+    pillText.textContent = 'Guardando…';
+    saveTimer = setTimeout(function() {
+      pill.classList.remove('saving');
+      pillText.textContent = 'Guardado automáticamente';
+    }, 500);
+  }
+
+  tbody.addEventListener('input', function(e) {
+    if (e.target.classList.contains('eval-nota-input')) {
+      var v = parseFloat(e.target.value.replace(',', '.'));
+      if (!isNaN(v)) { if (v > 7) e.target.value = '7.0'; if (v < 1) e.target.value = '1.0'; }
+      recalcular();
+      autoguardar();
+    } else if (e.target.classList.contains('eval-obs-input')) {
+      autoguardar();
+    }
+  });
+
+  recalcular();
+</script>
+
+</body>
+</html>
